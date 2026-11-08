@@ -6,7 +6,7 @@ Publishes the version in app/build.gradle.kts as a GitHub release with its APK.
 Run it on main with everything committed. It builds dist/voice-inbox-<version>.apk
 (build.ps1), tags the last commit v<version>, pushes main and the tag, creates the
 GitHub release and uploads the APK. Obtainium on the phone finds new releases at
-https://github.com/t7ko/android-voice-inbox. Each step is skipped when already done,
+https://github.com/t7ko-ai-projects/android-voice-inbox. Each step is skipped when already done,
 so the script can be run again after a failure.
 
 The token (fine-grained, Contents read and write on this repository only) is read
@@ -14,7 +14,7 @@ from the file that github.tokenFile in local.properties names. It is never print
 #>
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$repo = 't7ko/android-voice-inbox'
+$repo = 't7ko-ai-projects/android-voice-inbox'
 
 function Get-LocalProperty([string]$name) {
     foreach ($line in Get-Content (Join-Path $root 'local.properties')) {

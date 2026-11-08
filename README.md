@@ -18,9 +18,9 @@ Status: version 1.1.0. Russian and English. See `AGENTS.md` for the plan.
 
 ## Install and first run
 
-1. Install the APK from the [Releases](https://github.com/t7ko/android-voice-inbox/releases)
+1. Install the APK from the [Releases](https://github.com/t7ko-ai-projects/android-voice-inbox/releases)
    page, or with [Obtainium](https://github.com/ImranR98/Obtainium) from
-   `https://github.com/t7ko/android-voice-inbox`, which also installs updates.
+   `https://github.com/t7ko-ai-projects/android-voice-inbox`, which also installs updates.
 
    If Obtainium cannot install the app or an update, often with an unclear error
    message, the likely cause is Google Play Protect, which may block apps that are not

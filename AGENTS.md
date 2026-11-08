@@ -215,7 +215,7 @@ Versions are in `gradle/libs.versions.toml`. The scripts are for Windows PowerSh
 - A release: raise `versionCode` and `versionName` in `app/build.gradle.kts`, commit, run
   `scripts/release.ps1`. Obtainium compares the tag with the installed versionName.
 - `scripts/release.ps1` tags `v<versionName>`, pushes, and publishes the APK as a GitHub
-  release at `t7ko/android-voice-inbox` for Obtainium, with the token file named by
+  release at `t7ko-ai-projects/android-voice-inbox` for Obtainium, with the token file named by
   `github.tokenFile` in `local.properties`. Never print a token or password, or put one
   on a command line.
 - Debug and release builds are signed with different keys: switching between them on a
