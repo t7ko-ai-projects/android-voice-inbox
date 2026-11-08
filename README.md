@@ -3,9 +3,9 @@
 Speak a short note and get it as a Markdown task in your Obsidian vault, with speech
 recognition entirely on the phone (Android 8 or newer).
 
-Tap the red **Record** icon and speak. Recording stops when you stop speaking; the
+Tap a red Record shortcut on your home screen and speak. Recording stops when you stop speaking; the
 recognized text shows while you speak; fix it if needed and tap Save (or let the app
-save it). The app appends one line to the Markdown file you picked:
+save it). The app appends one line to that shortcut's Markdown file:
 
 ```markdown
 - [ ] Купить молоко и хлеб
@@ -14,7 +14,7 @@ save it). The app appends one line to the Markdown file you picked:
 Every capture is kept, with its audio, until you delete it: if saving fails or the app
 is closed or killed at any point, the capture waits in **History** to be saved.
 
-Status: version 1.0.0. Russian and English. See `AGENTS.md` for the plan.
+Status: version 1.1.0. Russian and English. See `AGENTS.md` for the plan.
 
 ## Install and first run
 
@@ -36,20 +36,30 @@ Status: version 1.0.0. Russian and English. See `AGENTS.md` for the plan.
 
 ## Recording
 
-- The app installs two icons: **Voice Inbox** opens the app, **Record** (red) opens it
-  already recording. A long press on the Voice Inbox icon offers Record too. On Xiaomi
-  phones both icons appear on the home screen by themselves.
+- **Shortcuts.** Each shortcut has its own name, Markdown file and language: for example
+  "Inbox" in Russian into your inbox note and "Work" in English into a work note. Add,
+  rename, change and delete them in Settings, **Edit shortcuts**. Changes apply at once,
+  also to the shortcuts already on the home screen. The first one, "Record", holds the
+  file and language you had before version 1.1.0.
+- To put a shortcut on the home screen, open it and tap **Add to home screen**. On Xiaomi
+  phones this may do nothing until you allow it: App info, Other permissions, Home screen
+  shortcuts. The **Voice Inbox widget** works everywhere: place it from the launcher's
+  widget list and pick the shortcut it starts. A long press on the app icon lists the
+  first few shortcuts too. Some launchers show a new name only after a restart.
+- Inside the app, chips above the record button pick which shortcut it uses; a capture
+  is always saved to the file of the shortcut it was recorded with.
 - Recording stops by itself 2 seconds after you stop speaking (Settings: 1 to 5 s, or
   off); short pauses between words do not stop it. If you say nothing, it stops after 10
   seconds. It never runs longer than 2 minutes (Settings: 30 s to 5 min). Stop works at
   any time.
-- **Russian** and **English** chips under the record button pick the language. Each model
+- **Russian** and **English** chips under the record button set the language of the
+  chosen shortcut. Each model
   knows only its language: English words in Russian speech come out as Russian-sounding
   words.
 - **Save without tapping Save** (Settings, off by default) saves the text right after
   recording, but only when the recording ended normally and the recognizer is sure of
-  the words. Otherwise the capture waits for you with the reason. Started from the Record
-  icon, the app then goes back to the home screen by itself (Settings).
+  the words. Otherwise the capture waits for you with the reason. Started from the home
+  screen, the app then goes back to the home screen by itself (Settings).
 - Music and other sound pause while you record, and the screen stays on. A call ends the
   recording and keeps what was said; during a call, recording does not start.
 - Tapping Record again while the last note is still being saved starts the next one

@@ -22,15 +22,10 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- "Record" on a long press of the icon. -->
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
         </activity>
 
-        <!-- A second launcher icon that starts recording at once. Pinned shortcuts need a
-             permission MIUI/HyperOS often denies sideloaded apps; a launcher icon does not.
-             Its own task, so every tap reaches MainActivity (see RecordActivity). -->
+        <!-- Opens the app recording with one shortcut: the target of home-screen shortcuts
+             and widgets. Its own task, so every tap reaches MainActivity (see RecordActivity). -->
         <activity
             android:name=".ui.RecordActivity"
             android:excludeFromRecents="true"
@@ -41,9 +36,32 @@
             android:taskAffinity="t7helpers.voiceinbox.record"
             android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="t7helpers.voiceinbox.action.RECORD" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Picks the shortcut of a Record widget when it is placed. -->
+        <activity
+            android:name=".ui.RecordWidgetSetup"
+            android:exported="true"
+            android:label="@string/record_label"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".ui.RecordWidget"
+            android:exported="true"
+            android:label="@string/record_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/record_widget" />
+        </receiver>
     </application>
 </manifest>

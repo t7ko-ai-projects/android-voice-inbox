@@ -17,23 +17,31 @@ import java.io.IOException
 object TargetFile {
     private const val ACCESS = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 
-    /**
-     * Keeps access to a file the user picked across restarts and makes it the target.
-     * Returns an error message if the file cannot be used.
-     */
-    fun choose(context: Context, uri: Uri): String? {
-        val resolver = context.contentResolver
+    /** A file the user picked: its name, or why it cannot be used. */
+    sealed interface Choice {
+        data class Picked(val uri: Uri, val name: String) : Choice
+        data class Refused(val message: String) : Choice
+    }
+
+    /** Keeps access to a file the user picked across restarts. */
+    fun choose(context: Context, uri: Uri): Choice {
         try {
-            resolver.takePersistableUriPermission(uri, ACCESS)
+            context.contentResolver.takePersistableUriPermission(uri, ACCESS)
         } catch (e: SecurityException) {
-            return "This file cannot be written. Pick one from the phone's storage."
+            return Choice.Refused("This file cannot be written. Pick one from the phone's storage.")
         }
-        val old = Settings.targetUri(context)
-        if (old != null && old != uri) {
-            runCatching { resolver.releasePersistableUriPermission(old, ACCESS) }
-        }
-        Settings.setTarget(context, uri, displayName(context, uri) ?: uri.lastPathSegment ?: "file")
-        return null
+        return Choice.Picked(uri, displayName(context, uri) ?: uri.lastPathSegment ?: "file")
+    }
+
+    /**
+     * Gives up access to [uri] when no shortcut uses it and no capture waits to check an
+     * unconfirmed write there.
+     */
+    fun releaseIfUnused(context: Context, uri: Uri) {
+        val s = uri.toString()
+        if (Shortcuts.list.value.any { it.targetUri == s }) return
+        if (Capture.records.value.any { it.pending?.uri == s }) return
+        runCatching { context.contentResolver.releasePersistableUriPermission(uri, ACCESS) }
     }
 
     /** False when the stored permission is gone, for example after the app's data was restored. */

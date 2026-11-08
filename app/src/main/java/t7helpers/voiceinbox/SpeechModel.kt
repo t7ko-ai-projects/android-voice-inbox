@@ -118,7 +118,7 @@ object SpeechModel {
             }
             setState(info, result)
             // Ready for the first capture.
-            if (result == ModelState.Installed && info.language == Settings.language(app)) runCatching { load(app, info.language) }
+            if (result == ModelState.Installed && Shortcuts.list.value.any { it.language == info.language }) runCatching { load(app, info.language) }
         }
     }
 

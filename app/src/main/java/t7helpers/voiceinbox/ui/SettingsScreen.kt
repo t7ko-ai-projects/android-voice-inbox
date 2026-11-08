@@ -21,6 +21,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -40,15 +41,14 @@ import androidx.compose.ui.unit.dp
 import t7helpers.voiceinbox.Capture
 import t7helpers.voiceinbox.ModelState
 import t7helpers.voiceinbox.Settings
+import t7helpers.voiceinbox.Shortcut
 import t7helpers.voiceinbox.SpeechModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    target: Target,
-    language: String,
-    onLanguage: (String) -> Unit,
-    onPickTarget: () -> Unit,
+    shortcuts: List<Shortcut>,
+    onOpenShortcuts: () -> Unit,
     onBack: () -> Unit,
 ) {
     val models by SpeechModel.states.collectAsState()
@@ -72,18 +72,22 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            TargetCard(target, onPickTarget)
-            Text(
-                "Each capture is added at the end of this file as one task line: - [ ] text",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Section("Language") {
-                LanguageChips(language, onLanguage)
+            Section("Shortcuts") {
                 Text(
-                    "Each model knows one language: words of the other come out as similar-sounding words.",
+                    shortcuts.joinToString { it.name },
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    "Each shortcut records into its own Markdown file, in its own language, and can be " +
+                        "put on the home screen.",
                     style = MaterialTheme.typography.bodySmall,
                 )
+                OutlinedButton(onClick = onOpenShortcuts) { Text("Edit shortcuts") }
             }
+            Text(
+                "Each capture is added at the end of its shortcut's file as one task line: - [ ] text",
+                style = MaterialTheme.typography.bodyMedium,
+            )
             for (info in SpeechModel.ALL) {
                 ModelCard(info, models[info.language] ?: ModelState.Missing, onInstall = { SpeechModel.install(context, info) })
             }
@@ -99,7 +103,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
+fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
@@ -182,7 +186,7 @@ private fun AutoSave() {
                 close = it
                 Settings.setCloseAfterAutoSave(context, it)
             }
-            Text("Only when recording started from the Record icon.", style = MaterialTheme.typography.bodySmall)
+            Text("Only when recording started from a shortcut or widget on the home screen.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

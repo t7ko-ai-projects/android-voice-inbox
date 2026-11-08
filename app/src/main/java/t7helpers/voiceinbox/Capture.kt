@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.util.Log
+import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -80,9 +81,12 @@ object Capture {
 
     /**
      * A Record tap that came while the last capture was still being recognized or saved:
-     * starts the next one as soon as that is done (true: from the Record icon). Null: none.
+     * starts the next one as soon as that is done. Null: none.
      */
-    @Volatile private var startWhenSettled: Boolean? = null
+    @Volatile private var startWhenSettled: Start? = null
+
+    /** How a recording was asked for: with which shortcut, and from the home screen ([fromIcon]) or in the app. */
+    data class Start(val shortcutId: String, val fromIcon: Boolean)
 
     /** Captures started by this process, which recovery leaves alone. */
     private val startedHere = ConcurrentHashMap.newKeySet<String>()
@@ -101,16 +105,19 @@ object Capture {
 
     fun audioFile(id: String): File = store.audioFile(id)
 
-    /** Needs the RECORD_AUDIO permission. [fromIcon]: started from the Record icon or shortcut. */
-    fun start(context: Context, fromIcon: Boolean = false) {
+    /** Needs the RECORD_AUDIO permission. */
+    fun start(context: Context, how: Start) {
         val current = _state.value
         if ((current is CaptureState.Recording && current.stopping) || current is CaptureState.Saving) {
-            startWhenSettled = fromIcon
+            startWhenSettled = how
             return
         }
         if (current is CaptureState.Recording) return
         val app = context.applicationContext
-        val language = Settings.language(app)
+        val shortcut = Shortcuts.get(how.shortcutId) ?: Shortcuts.selected
+        val fromIcon = how.fromIcon
+        Shortcuts.select(app, shortcut.id)
+        val language = shortcut.language
         // The capture on screen stays in History, with its edits, whether a new one starts or not.
         if (current is CaptureState.Editing) keep(current)
         val problem = FocusedInput.blocked(app) ?: if (SpeechModel.state(language) != ModelState.Installed) {
@@ -131,7 +138,7 @@ object Capture {
         val id = LocalDateTime.now().format(ID_FORMAT)
         startedHere += id
         try {
-            store.put(CaptureRecord(id, System.currentTimeMillis(), CaptureStatus.RECORDING, language = language))
+            store.put(CaptureRecord(id, System.currentTimeMillis(), CaptureStatus.RECORDING, language = language, shortcut = shortcut.id))
         } catch (e: IOException) {
             input.close()
             _state.value = CaptureState.Idle("Could not store the capture: ${e.message}")
@@ -192,6 +199,7 @@ object Capture {
         val record = store.get(id) ?: return false
         if (record.status != CaptureStatus.READY && record.status != CaptureStatus.FAILED) return false
         if (current is CaptureState.Editing) keep(current)
+        app.let { Shortcuts.select(it, shortcutOf(id).id) }
         _state.value = CaptureState.Editing(id, record.text, record.message, record.needsDecision)
         return true
     }
@@ -218,9 +226,10 @@ object Capture {
     private fun save(context: Context, force: Boolean, closeApp: Boolean) {
         val editing = _state.value as? CaptureState.Editing ?: return
         val app = context.applicationContext
-        val uri = Settings.targetUri(app)
+        val shortcut = shortcutOf(editing.id)
+        val uri = shortcut.targetUri?.toUri()
         if (uri == null) {
-            _state.value = editing.copy(message = "Choose the Markdown file first.")
+            _state.value = editing.copy(message = "Choose the Markdown file of “${shortcut.name}” first.")
             return
         }
         if (TaskLine.format(editing.text) == null) {
@@ -232,7 +241,7 @@ object Capture {
         scope.launch {
             val result = try {
                 store.put(record)
-                TargetFile.save(app, record, uri, Settings.targetName(app) ?: "the file", force) { store.put(it) }
+                TargetFile.save(app, record, uri, shortcut.targetName ?: "the file", force) { store.put(it) }
             } catch (e: Exception) {
                 record.copy(status = CaptureStatus.FAILED, message = "Not saved: ${e.message}")
             }
@@ -249,7 +258,7 @@ object Capture {
         val record = store.get(editing.id)?.copy(text = editing.text) ?: return
         val pending = record.pending
         val line = pending?.line ?: TaskLine.format(editing.text) ?: return
-        val fileName = pending?.fileName ?: Settings.targetName(context) ?: "the file"
+        val fileName = pending?.fileName ?: shortcutOf(editing.id).targetName ?: "the file"
         _state.value = CaptureState.Saving(editing.id, editing.text)
         scope.launch {
             val result = TaskSaver.saved(record, line, fileName)
@@ -258,6 +267,9 @@ object Capture {
             settled()
         }
     }
+
+    /** The shortcut whose file a capture goes to: the one it was recorded with, or else the selected one. */
+    fun shortcutOf(id: String): Shortcut = Shortcuts.get(store.get(id)?.shortcut) ?: Shortcuts.selected
 
     /** Deletes the audio of captures saved longer ago than Settings says. */
     fun deleteOldAudio(context: Context) {
@@ -268,9 +280,9 @@ object Capture {
 
     /** Starts the capture a Record tap asked for while the last one was finishing. */
     private fun settled() {
-        val fromIcon = startWhenSettled ?: return
+        val how = startWhenSettled ?: return
         startWhenSettled = null
-        start(app, fromIcon)
+        start(app, how)
     }
 
     private fun show(record: CaptureRecord, closeApp: Boolean = false) {

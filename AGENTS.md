@@ -26,6 +26,9 @@ only after the user approves.
 4. Done (0.4.0): calls and other sound (audio focus, refusal during a call), lost file
    access, Record taps while the last capture finishes, the screen kept on while
    recording, going back to the home screen after saving by itself, start-up timing.
+5. Done (1.1.0): several shortcuts, each with its own name, file and language, edited in
+   the app; pinned shortcuts, a Record widget and the long-press menu instead of the
+   second launcher icon.
 
 ## Decisions
 
@@ -95,10 +98,20 @@ only after the user approves.
 - Settings: the audio of saved captures is deleted 1, 7 (default) or 30 days after
   saving, or kept; the record stays. Checked at every start of the process and when the
   setting changes.
-- The "Record" icon is a second launcher activity, `RecordActivity` (also the target of
-  the static app shortcut "Record"), not a pinned shortcut: MIUI/HyperOS often deny
-  sideloaded apps the permission to pin shortcuts, and HyperOS puts every launcher entry
-  on the home screen anyway. `RecordActivity` has no UI and its own task affinity; it
+- Shortcuts (`Shortcuts`, `Shortcut`; 1.1.0): a JSON list in the settings
+  SharedPreferences, each with id, name, file URI and name, and language, plus the one
+  selected for the in-app record button. The first start of 1.1.0 moves the old single
+  target and language into a shortcut "Record". A capture stores its shortcut id and is
+  saved to that shortcut's current file (else the selected one's). File grants are
+  released only when no shortcut and no pending write uses them. Every change goes to the
+  launcher: dynamic shortcuts (long-press menu, as many as fit), `updateShortcuts` for
+  pinned ones, `disableShortcuts` for pinned ones of deleted shortcuts, and
+  `RecordWidget.updateAll`. Labels cannot change on a launcher icon, so the second
+  launcher activity of 0.3.0 is gone. Because MIUI/HyperOS often deny sideloaded apps
+  pinning, `RecordWidget` (1x1, `RecordWidgetSetup` picks its shortcut; widget id to
+  shortcut id in the `widgets` SharedPreferences) is the reliable home-screen way.
+- Shortcuts and widgets start `RecordActivity` with the shortcut id
+  (`MainActivity.EXTRA_SHORTCUT`). `RecordActivity` has no UI and its own task affinity; it
   starts `MainActivity` with `ACTION_RECORD` (`NEW_TASK | CLEAR_TOP | SINGLE_TOP`) and
   finishes, so each tap reaches the app, also when it is open on another screen. A launcher
   alias of `MainActivity` would only bring the open app forward. Recording starts in
@@ -176,8 +189,9 @@ there, but the capture stays SAVED in History with its text.
   threads, when to stop and to save), `AudioInput` (`MicInput`,
   `WavFileInput`), `Wav` (header, writer, repair, level), `SpeechModel` and `ModelZip`
   (download, unpack, load), `Markdown` (task line, append algorithm, `TaskSaver`),
-  `TargetFile` (SAF access, pread/pwrite), `Settings`.
-- `.../ui/`: Compose screens `CaptureScreen`, `HistoryScreen` and `SettingsScreen`,
+  `TargetFile` (SAF access, pread/pwrite), `Settings`, `Shortcuts`.
+- `.../ui/`: Compose screens `CaptureScreen`, `HistoryScreen`, `SettingsScreen` and
+  `ShortcutsScreen` (list and editor), `RecordWidget` (widget and its setup),
   shared cards and chips in `Components`, `AudioPlayer`, `RecordActivity`; navigation is a plain enum in
   `MainActivity`, which also holds the file picker and the microphone permission request.
 - `app/src/test/`: JVM unit tests against real files (`RafAccess`): the append algorithm
@@ -240,8 +254,11 @@ Versions are in `gradle/libs.versions.toml`. The scripts are for Windows PowerSh
 - A lost file grant: as root (`adb root`), delete `/data/system/urigrants.xml` (Android's
   binary XML of persisted grants; on the emulator only this app's) and reboot.
 - Timing: `adb logcat` lines of `ActivityTaskManager` (START, Displayed) and `VoiceInbox`.
-- `adb shell am start -n t7helpers.voiceinbox/.ui.RecordActivity` is a tap on the Record
-  icon. Settings can be changed with the app stopped by `run-as ... sed -i` on
+- `adb shell am start -n t7helpers.voiceinbox/.ui.RecordActivity -a
+  t7helpers.voiceinbox.action.RECORD --es t7helpers.voiceinbox.extra.SHORTCUT <id>` is a
+  tap on a shortcut (ids in `shared_prefs/settings.xml`). New Markdown files pushed with
+  adb show in the picker after `am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE
+  -d file:///sdcard/Documents/<name>.md`. Settings can be changed with the app stopped by `run-as ... sed -i` on
   `shared_prefs/settings.xml`.
 
 ## Tested
@@ -336,6 +353,18 @@ On 2026-10-26, version 0.4.0 (debug build) on the Android 14 emulator:
   This found a bug from 0.2.0: any failure to open the file showed a ClassCastException
   instead (a `getOrElse` with `@UnsafeVariance` on an `Outcome<Nothing>`); the capture was
   kept, and it is fixed.
+
+On 2026-11-08, version 1.1.0 (debug build) on the Android 14 emulator:
+
+- Settings as 1.0.0 left them (English, a file) became one shortcut "Record" with that
+  file and language, in the long-press menu.
+- A new shortcut, renamed "Work" and given its own file: recordings started with each
+  shortcut's intent went to their own file, and each record kept its shortcut id.
+- "Add to home screen" pinned "Work"; tapping it started recording into its file.
+  Renamed "Work notes": ShortcutManager had the new label, but the Pixel launcher still
+  showed "Work". Deleting the shortcut disabled the pinned icon; its intent opens the app
+  with "This shortcut was deleted."
+- Not tried: placing the widget (needs the launcher's widget picker by hand), a phone.
 
 Not tried yet: music actually pausing (no player on the emulator; the focus request is
 there), `isClientSilenced` on a real call, a provider other than local storage, recovery

@@ -1,15 +1,11 @@
 package t7helpers.voiceinbox
 
 import android.content.Context
-import android.net.Uri
 import androidx.core.content.edit
 
 /** User settings in SharedPreferences. */
 object Settings {
-    private const val TARGET_URI = "targetUri"
-    private const val TARGET_NAME = "targetName"
     private const val AUDIO_DAYS = "audioRetentionDays"
-    private const val LANGUAGE = "language"
     private const val AUTO_STOP = "autoStop"
     private const val SILENCE_MS = "silenceMs"
     private const val MAX_SECONDS = "maxSeconds"
@@ -24,24 +20,10 @@ object Settings {
 
     private fun prefs(context: Context) = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    fun targetUri(context: Context): Uri? = prefs(context).getString(TARGET_URI, null)?.let(Uri::parse)
-
-    fun targetName(context: Context): String? = prefs(context).getString(TARGET_NAME, null)
-
-    fun setTarget(context: Context, uri: Uri, name: String) = prefs(context).edit(commit = true) {
-        putString(TARGET_URI, uri.toString())
-        putString(TARGET_NAME, name)
-    }
-
     /** Days the audio of a saved capture is kept; unsaved captures always keep theirs. */
     fun audioRetentionDays(context: Context): Int = prefs(context).getInt(AUDIO_DAYS, 7)
 
     fun setAudioRetentionDays(context: Context, days: Int) = prefs(context).edit(commit = true) { putInt(AUDIO_DAYS, days) }
-
-    /** The language of new captures, a [ModelInfo.language]. */
-    fun language(context: Context): String = prefs(context).getString(LANGUAGE, null) ?: SpeechModel.RUSSIAN.language
-
-    fun setLanguage(context: Context, language: String) = prefs(context).edit(commit = true) { putString(LANGUAGE, language) }
 
     /** Whether a recording stops by itself after [silenceMs] of silence. */
     fun autoStop(context: Context): Boolean = prefs(context).getBoolean(AUTO_STOP, true)

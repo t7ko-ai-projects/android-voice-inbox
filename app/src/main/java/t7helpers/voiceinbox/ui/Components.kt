@@ -2,6 +2,8 @@ package t7helpers.voiceinbox.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import t7helpers.voiceinbox.ModelInfo
 import t7helpers.voiceinbox.ModelState
+import t7helpers.voiceinbox.Shortcut
 import t7helpers.voiceinbox.SpeechModel
 import java.util.Locale
 
@@ -94,6 +97,17 @@ fun formatSeconds(ms: Long): String =
 fun formatDuration(ms: Long): String {
     val seconds = ms / 1000
     return "%d:%02d".format(seconds / 60, seconds % 60)
+}
+
+/** Chips to pick the shortcut the record button uses. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ShortcutChips(shortcuts: List<Shortcut>, selectedId: String, onSelect: (String) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (shortcut in shortcuts) {
+            FilterChip(selected = shortcut.id == selectedId, onClick = { onSelect(shortcut.id) }, label = { Text(shortcut.name) })
+        }
+    }
 }
 
 /** Chips to pick the language of new captures. */

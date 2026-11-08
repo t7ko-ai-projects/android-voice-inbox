@@ -60,13 +60,16 @@ import t7helpers.voiceinbox.CaptureState
 import t7helpers.voiceinbox.CaptureStatus
 import t7helpers.voiceinbox.ModelState
 import t7helpers.voiceinbox.R
+import t7helpers.voiceinbox.Shortcut
 import t7helpers.voiceinbox.SpeechModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaptureScreen(
+    shortcuts: List<Shortcut>,
+    selected: Shortcut,
     target: Target,
-    language: String,
+    onSelectShortcut: (String) -> Unit,
     onLanguage: (String) -> Unit,
     onRecord: () -> Unit,
     onPickTarget: () -> Unit,
@@ -75,6 +78,7 @@ fun CaptureScreen(
     onOpenSettings: () -> Unit,
 ) {
     val state by Capture.state.collectAsState()
+    val language = selected.language
     val models by SpeechModel.states.collectAsState()
     val model = models[language] ?: ModelState.Missing
     val records by Capture.records.collectAsState()
@@ -106,6 +110,8 @@ fun CaptureScreen(
                 val info = SpeechModel.info(language)
                 ModelCard(info, model, onInstall = { SpeechModel.install(context, info) })
             }
+            // Which shortcut the record button uses; a capture on screen stays with its own.
+            if (shortcuts.size > 1 && state is CaptureState.Idle) ShortcutChips(shortcuts, selected.id, onSelectShortcut)
             TargetCard(target, onPickTarget)
             when (val s = state) {
                 is CaptureState.Idle -> Idle(
